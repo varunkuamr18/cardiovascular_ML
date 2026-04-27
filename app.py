@@ -1,63 +1,48 @@
 import streamlit as st
 import pandas as pd
+import joblib
 import numpy as np
-import pickle
-from sklearn.preprocessing import StandardScaler
 
-# Load the saved model and scaler
-try:
-    model = pickle.load(open('cardio_model.pkl', 'rb'))
-    scaler = pickle.load(open('scaler.pkl', 'rb'))
-except:
-    st.error("Model files not found. Please run the training script first.")
+# Load the model and scaler
+model = joblib.load('cardio_model.pkl')
+scaler = joblib.load('scaler.pkl')
 
-st.set_page_config(page_title="CardioCheck AI", layout="wide")
+st.title("Cardiovascular Disease Prediction")
+st.write("Enter patient details to predict the risk of cardiovascular disease.")
 
-st.title("🏥 Cardiovascular Disease Prediction Portal")
-st.markdown("Enter the patient's clinical data to calculate the probability of cardiovascular disease.")
+# Input fields
+col1, col2 = st.columns(2)
 
-# Create Input Form
-with st.form("prediction_form"):
-    col1, col2, col3 = st.columns(3)
+with col1:
+    age_years = st.number_input("Age (Years)", min_value=1, max_value=120, value=50)
+    gender = st.selectbox("Gender", options=[1, 2], format_func=lambda x: "Female" if x==1 else "Male")
+    height = st.number_input("Height (cm)", min_value=50, max_value=250, value=165)
+    weight = st.number_input("Weight (kg)", min_value=20.0, max_value=300.0, value=70.0)
+    ap_hi = st.number_input("Systolic Blood Pressure (ap_hi)", min_value=50, max_value=250, value=120)
+
+with col2:
+    ap_lo = st.number_input("Diastolic Blood Pressure (ap_lo)", min_value=30, max_value=150, value=80)
+    cholesterol = st.selectbox("Cholesterol Level", options=[1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
+    gluc = st.selectbox("Glucose Level", options=[1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
+    smoke = st.checkbox("Smoker")
+    alco = st.checkbox("Alcohol Intake")
+    active = st.checkbox("Physical Activity", value=True)
+
+# Convert age to days as per dataset format
+age_days = age_years * 365.25
+
+if st.button("Predict"):
+    # Prepare features for prediction
+    features = np.array([[age_days, gender, height, weight, ap_hi, ap_lo, cholesterol, gluc, int(smoke), int(alco), int(active)]])
     
-    with col1:
-        age = st.number_input("Age (Years)", 1, 120, 50)
-        gender = st.selectbox("Gender", options=[1, 2], format_func=lambda x: "Female" if x==1 else "Male")
-        height = st.number_input("Height (cm)", 50, 250, 165)
-        
-    with col2:
-        weight = st.number_input("Weight (kg)", 10.0, 300.0, 70.0)
-        ap_hi = st.number_input("Systolic BP (ap_hi)", 50, 250, 120)
-        ap_lo = st.number_input("Diastolic BP (ap_lo)", 30, 150, 80)
-        
-    with col3:
-        chol = st.selectbox("Cholesterol", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
-        gluc = st.selectbox("Glucose", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
-        smoke = st.toggle("Smoker")
-        alco = st.toggle("Alcohol Intake")
-        active = st.toggle("Physically Active", value=True)
-
-    submit = st.form_submit_button("Generate Report")
-
-if submit:
-    # Prepare data (Convert age to days for model compatibility)
-    input_data = np.array([[age*365, gender, height, weight, ap_hi, ap_lo, chol, gluc, int(smoke), int(alco), int(active)]])
+    # Scale features
+    features_scaled = scaler.transform(features)
     
-    # Scale inputs
-    scaled_data = scaler.transform(input_data)
+    # Prediction
+    prediction = model.predict(features_scaled)
+    probability = model.predict_proba(features_scaled)[0][1]
     
-    # Predict
-    prediction = model.predict(scaled_data)
-    prob = model.predict_proba(scaled_data)[0][1]
-
-    # Result Display
-    st.divider()
     if prediction[0] == 1:
-        st.error(f"### High Risk Detected")
-        st.write(f"The model predicts a **{prob*100:.1f}%** probability of Cardiovascular disease.")
+        st.error(f"High Risk: The model predicts a high probability of cardiovascular disease ({probability:.2%}).")
     else:
-        st.success(f"### Low Risk Profile")
-        st.write(f"The model predicts a **{prob*100:.1f}%** probability of Cardiovascular disease.")
-    
-    # Display Z-Score / Metrics Info
-    st.info("Note: This model was trained with GridSearchCV using Random Forest for maximum efficiency.")
+        st.success(f"Low Risk: The model predicts a low probability of cardiovascular disease ({probability:.2%}).")
