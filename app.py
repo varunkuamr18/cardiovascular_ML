@@ -4,133 +4,161 @@ import numpy as np
 import joblib
 from sklearn.preprocessing import StandardScaler
 
-# --- 1. PAGE CONFIG & CUSTOM STYLING ---
-st.set_page_config(page_title="CardioCheck AI", layout="wide", page_icon="🏥")
+# --- 1. PAGE CONFIG & THEME ---
+st.set_page_config(
+    page_title="CardioIntel AI", 
+    layout="wide", 
+    page_icon="❤️",
+    initial_sidebar_state="collapsed"
+)
 
-# Custom CSS for a professional look
+# --- 2. ADVANCED UI STYLING (High Visibility) ---
 st.markdown("""
     <style>
-    .main {
-        background-color: #f5f7f9;
+    /* Main Background */
+    .stApp {
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
     }
+    
+    /* Header Container */
+    .main-header {
+        background-color: #ffffff;
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        text-align: center;
+        border-bottom: 5px solid #ff4b4b;
+    }
+    
+    /* Input Card Styling */
+    div[data-testid="stForm"] {
+        background-color: #ffffff !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 3rem !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Text Visibility Overrides */
+    h1, h2, h3, p, label {
+        color: #1e293b !important;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .stNumberInput label, .stSelectbox label {
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Button Styling */
     .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #ff4b4b;
-        color: white;
+        background: linear-gradient(90deg, #ff4b4b 0%, #ff7676 100%);
+        color: white !important;
+        border: none;
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
         font-weight: bold;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
-    .stForm {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .report-card {
-        padding: 1.5rem;
-        border-radius: 15px;
-        border-left: 10px solid;
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 75, 75, 0.4);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. ASSET LOADING ---
+# --- 3. DATA LOADING ---
 @st.cache_resource
-def load_model_assets():
+def load_assets():
     try:
         m = joblib.load('cardio_model.pkl')
         s = joblib.load('scaler.pkl')
         return m, s
-    except Exception as e:
+    except:
         return None, None
 
-model, scaler = load_model_assets()
+model, scaler = load_assets()
 
-# --- 3. SIDEBAR DESIGN ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/822/822118.png", width=100)
-    st.title("About CardioCheck")
-    st.info("This AI tool uses Random Forest classification to predict cardiovascular risk based on clinical parameters.")
-    st.warning("Note: This is for educational purposes and not a substitute for professional medical advice.")
+# --- 4. TOP DASHBOARD ---
+st.markdown("""
+    <div class="main-header">
+        <h1 style='margin:0; font-size: 2.8rem;'>❤️ CardioIntel Diagnostics</h1>
+        <p style='font-size: 1.2rem; color: #64748b;'>AI-Driven Cardiovascular Risk Assessment Engine</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# --- 4. MAIN UI ---
-st.title("🏥 Cardiovascular Health Intelligence")
-st.markdown("---")
-
-if model is None or scaler is None:
-    st.error("⚠️ System Offline: Model assets not found in repository.")
+if model is None:
+    st.error("🚨 System Failure: Predictive models not detected in the repository.")
     st.stop()
 
-# --- 5. INPUT FORM ---
-with st.form("prediction_form"):
-    st.subheader("Patient Clinical Profile")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.write("**Personal Data**")
-        age = st.number_input("Age (Years)", 1, 120, 50)
-        gender = st.selectbox("Gender", options=[1, 2], format_func=lambda x: "Female" if x==1 else "Male")
-        height = st.number_input("Height (cm)", 50, 250, 165)
-        weight = st.number_input("Weight (kg)", 20.0, 300.0, 70.0)
-    
-    with col2:
-        st.write("**Vitals**")
-        ap_hi = st.number_input("Systolic BP", 50, 250, 120)
-        ap_lo = st.number_input("Diastolic BP", 30, 150, 80)
-        active = st.toggle("Physically Active", value=True)
-        smoke = st.toggle("Smoker")
-        alco = st.toggle("Alcohol Intake")
+# --- 5. INPUT SECTION ---
+with st.form("clean_ui_form"):
+    t1, t2 = st.columns([1,1])
+    with t1:
+        st.markdown("### 👤 Patient Identity")
+        age = st.number_input("Current Age (Years)", 1, 110, 45)
+        gender = st.selectbox("Biological Sex", [1, 2], format_func=lambda x: "Female" if x==1 else "Male")
+        height = st.number_input("Height (cm)", 100, 250, 170)
+        weight = st.number_input("Body Weight (kg)", 30, 200, 75)
 
-    with col3:
-        st.write("**Lab Results**")
-        chol = st.selectbox("Cholesterol", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "High"][x-1])
-        gluc = st.selectbox("Glucose", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "High"][x-1])
+    with t2:
+        st.markdown("### 🩺 Clinical Vitals")
+        ap_hi = st.number_input("Systolic Blood Pressure", 80, 220, 120)
+        ap_lo = st.number_input("Diastolic Blood Pressure", 40, 140, 80)
+        chol = st.selectbox("Cholesterol Status", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "High Risk"][x-1])
+        gluc = st.selectbox("Glucose Status", [1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "High Risk"][x-1])
 
+    st.markdown("---")
+    l1, l2, l3 = st.columns(3)
+    with l1: smoke = st.checkbox("🚭 Active Smoker")
+    with l2: alco = st.checkbox("🍷 Regular Alcohol")
+    with l3: active = st.checkbox("🏃 Physical Activity", value=True)
+    
     st.markdown("<br>", unsafe_allow_html=True)
-    submit = st.form_submit_button("ANALYSIS PATIENT RISK")
+    submit = st.form_submit_button("GENERATE DIAGNOSTIC REPORT")
 
-# --- 6. PREDICTION & ENHANCED REPORT ---
+# --- 6. OUTPUT REPORT ---
 if submit:
-    # Prepare and Scale data
+    # Logic
     input_data = np.array([[age*365.25, gender, height, weight, ap_hi, ap_lo, chol, gluc, int(smoke), int(alco), int(active)]])
     scaled_data = scaler.transform(input_data)
-    
-    # Prediction
     prediction = model.predict(scaled_data)
     prob = model.predict_proba(scaled_data)[0][1]
 
-    st.subheader("Diagnostic Summary")
+    st.markdown("## 📊 Diagnostic Result")
     
-    # Design Result Cards
-    res_col1, res_col2 = st.columns([1, 2])
+    r1, r2 = st.columns([1, 1.5])
     
-    with res_col1:
+    with r1:
         if prediction[0] == 1:
             st.markdown(f"""
-                <div class='report-card' style='background-color: #ffe5e5; border-color: #ff4b4b; color: #ff4b4b;'>
-                    <h3>HIGH RISK</h3>
-                    <h1>{prob:.1%}</h1>
-                    <p>Cardiovascular risk detected.</p>
+                <div style="background-color: #fff1f0; padding: 2rem; border-radius: 20px; border: 2px solid #ffa39e; text-align: center;">
+                    <h2 style="color: #cf1322 !important;">HIGH RISK</h2>
+                    <h1 style="font-size: 4rem; color: #cf1322 !important;">{prob:.1%}</h1>
                 </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-                <div class='report-card' style='background-color: #e5f9e5; border-color: #28a745; color: #28a745;'>
-                    <h3>LOW RISK</h3>
-                    <h1>{prob:.1%}</h1>
-                    <p>Within safe parameters.</p>
+                <div style="background-color: #f6ffed; padding: 2rem; border-radius: 20px; border: 2px solid #b7eb8f; text-align: center;">
+                    <h2 style="color: #389e0d !important;">LOW RISK</h2>
+                    <h1 style="font-size: 4rem; color: #389e0d !important;">{prob:.1%}</h1>
                 </div>
             """, unsafe_allow_html=True)
 
-    with res_col2:
-        st.write("**Risk Analysis & Suggestions:**")
-        if ap_hi > 140 or ap_lo > 90:
-            st.write("🔴 **Hypertension Alert:** Blood pressure is outside normal range.")
-        if chol > 1:
-            st.write("🟡 **Cholesterol Warning:** Elevated cholesterol contributes to arterial plaque.")
-        if not active:
-            st.write("🔵 **Activity Recommendation:** Increase physical activity to improve heart health.")
+    with r2:
+        st.write("### AI Risk Breakdown")
+        st.progress(prob)
         
-        st.progress(prob) # Visual probability bar
+        # Smart Advice based on inputs
+        if ap_hi >= 140:
+            st.warning("⚠️ **Hypertension detected.** Blood pressure is a primary driver for your result.")
+        if chol > 1:
+            st.info("ℹ️ **Lipid Profile:** Elevated cholesterol levels are increasing arterial stress.")
+        if not active:
+            st.write("💡 **Recommendation:** Daily physical activity could lower this risk score significantly.")
