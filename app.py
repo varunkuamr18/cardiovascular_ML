@@ -3,14 +3,16 @@ import pandas as pd
 import joblib
 import numpy as np
 
-# Load the model and scaler
-model = joblib.load('cardio_model.pkl')
-scaler = joblib.load('scaler.pkl')
+# Load the model and scaler (Ensure these files are in your GitHub repo)
+try:
+    model = joblib.load('cardio_model.pkl')
+    scaler = joblib.load('scaler.pkl')
+except Exception as e:
+    st.error(f"Error loading model files: {e}")
 
 st.title("Cardiovascular Disease Prediction")
-st.write("Enter patient details to predict the risk of cardiovascular disease.")
+st.write("Enter patient details to predict the risk profile.")
 
-# Input fields
 col1, col2 = st.columns(2)
 
 with col1:
@@ -22,27 +24,25 @@ with col1:
 
 with col2:
     ap_lo = st.number_input("Diastolic Blood Pressure (ap_lo)", min_value=30, max_value=150, value=80)
-    cholesterol = st.selectbox("Cholesterol Level", options=[1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
-    gluc = st.selectbox("Glucose Level", options=[1, 2, 3], format_func=lambda x: ["Normal", "Above Normal", "Well Above Normal"][x-1])
+    cholesterol = st.selectbox("Cholesterol Level", options=[1, 2, 3])
+    gluc = st.selectbox("Glucose Level", options=[1, 2, 3])
     smoke = st.checkbox("Smoker")
     alco = st.checkbox("Alcohol Intake")
     active = st.checkbox("Physical Activity", value=True)
 
-# Convert age to days as per dataset format
-age_days = age_years * 365.25
-
 if st.button("Predict"):
-    # Prepare features for prediction
+    # Prepare features
+    age_days = age_years * 365.25
     features = np.array([[age_days, gender, height, weight, ap_hi, ap_lo, cholesterol, gluc, int(smoke), int(alco), int(active)]])
     
-    # Scale features
+    # Scale features using the loaded scaler
     features_scaled = scaler.transform(features)
     
     # Prediction
     prediction = model.predict(features_scaled)
-    probability = model.predict_proba(features_scaled)[0][1]
+    prob = model.predict_proba(features_scaled)[0][1]
     
     if prediction[0] == 1:
-        st.error(f"High Risk: The model predicts a high probability of cardiovascular disease ({probability:.2%}).")
+        st.error(f"High Risk: Prediction Probability {prob:.2%}")
     else:
-        st.success(f"Low Risk: The model predicts a low probability of cardiovascular disease ({probability:.2%}).")
+        st.success(f"Low Risk: Prediction Probability {prob:.2%}")
